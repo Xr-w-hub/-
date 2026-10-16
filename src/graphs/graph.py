@@ -4,7 +4,7 @@
 """
 
 from langgraph.graph import StateGraph, END
-from graphs.state import GlobalState, GraphInput, GraphOutput
+from graphs.state import GlobalState, GraphInput, GraphOutput, DecideMode
 from graphs.nodes.contract_read_node import contract_read_node
 from graphs.nodes.party_clause_node import party_clause_node
 from graphs.nodes.delivery_clause_node import delivery_clause_node
@@ -12,11 +12,23 @@ from graphs.nodes.payment_clause_node import payment_clause_node
 from graphs.nodes.compliance_clause_node import compliance_clause_node
 from graphs.nodes.dispute_clause_node import dispute_clause_node
 from graphs.nodes.risk_summary_node import risk_summary_node
+from graphs.nodes.decide_node import decide_node
+from graphs.nodes.law_kb_add_node import law_kb_add_node
+
+
+def decide_mode(state: DecideMode) -> str:
+    """入口模式分流：提供法条文件则新增法条入库，否则进入合同审查。"""
+    if state.law_file is not None:
+        return "新增法条"
+    return "合同审查"
+
 
 # 状态图：指定全局 State 与图出入参
 builder = StateGraph(GlobalState, input_schema=GraphInput, output_schema=GraphOutput)
 
 # 添加节点（审查类节点标记为 agent，注入各自 LLM 配置）
+builder.add_node("decide", decide_node)
+builder.add_node("law_kb_add", law_kb_add_node)
 builder.add_node("contract_read", contract_read_node)
 builder.add_node("party_clause", party_clause_node, metadata={"type": "agent", "llm_cfg": "config/party_clause_llm_cfg.json"})
 builder.add_node("delivery_clause", delivery_clause_node, metadata={"type": "agent", "llm_cfg": "config/delivery_clause_llm_cfg.json"})
@@ -25,8 +37,17 @@ builder.add_node("compliance_clause", compliance_clause_node, metadata={"type": 
 builder.add_node("dispute_clause", dispute_clause_node, metadata={"type": "agent", "llm_cfg": "config/dispute_clause_llm_cfg.json"})
 builder.add_node("risk_summary", risk_summary_node, metadata={"type": "agent", "llm_cfg": "config/risk_summary_llm_cfg.json"})
 
-# 设置入口点
-builder.set_entry_point("contract_read")
+# 设置入口点：先路由模式（新增法条 / 合同审查）
+builder.set_entry_point("decide")
+builder.add_conditional_edges(
+    source="decide",
+    path=decide_mode,
+    path_map={
+        "新增法条": "law_kb_add",
+        "合同审查": "contract_read",
+    },
+)
+builder.add_edge("law_kb_add", END)
 
 # 合同读取后并行分发到 5 个审查 Agent
 builder.add_edge("contract_read", "party_clause")
