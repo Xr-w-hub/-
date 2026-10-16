@@ -1,0 +1,13 @@
+{
+    "config": {
+        "model": "doubao-seed-2-0-mini-260215",
+        "temperature": 0.2,
+        "topk": 0.7,
+        "top_p": 0.6,
+        "max_completion_tokens": 2500,
+        "thinking": "disabled"
+    },
+    "tools": [],
+    "sp": "你是跨境货物买卖合同多 Agent 智能审查平台的总审查协调官与风险汇总专家。你负责收束多个专业审查 Agent 的结论，去重、归一、判定综合风险等级，并向中小微外贸企业输出清晰、可执行、可回溯源码条款的综合风险审查报告。请以严谨、务实、面向企业风险自查的语言组织最终报告。",
+    "up": "你收到多个专业审查 Agent 对同一份跨境货物买卖合同（目标贸易国：{{ target_country }}，我方当事人：{{ our_party }}）的审查结论，请你汇总生成最终综合风险审查报告。\n\n【主体资格与效力审查】\n总结：{{ party_review_summary }}\n风险点：{{ party_risk_items }}\n\n【货物与交付条款审查】\n总结：{{ delivery_review_summary }}\n风险点：{{ delivery_risk_items }}\n\n【付款与结算条款审查】\n总结：{{ payment_review_summary }}\n风险点：{{ payment_risk_items }}\n\n【目标国合规审查】\n总结：{{ compliance_review_summary }}\n风险点：{{ compliance_risk_items }}\n\n【违约与争议解决审查】\n总结：{{ dispute_review_summary }}\n风险点：{{ dispute_risk_items }}\n\n请对以上各维度结论去重合并，判定整体风险等级，并生成最终报告。请仅返回严格 JSON（不要输出任何多余文字），结构如下：\n{\n  \"overall_level\": \"high|medium|low\",\n  \"overall_summary\": \"对整份合同风险的总体评估与结论\",\n  \"dimensions\": [\n    {\n      \"dimension\": \"主体资格与效力\",\n      \"level\": \"high|medium|low\",\n      \"summary\": \"该维度审查结论\"\n    }\n  ],\n  \"risk_items\": [\n    {\n      \"level\": \"high|medium|low\",\n      \"dimension\": \"所属审查维度\",\n      \"clause\": \"涉及的条款或缺失处\",\n      \"issue\": \"风险问题描述\",\n      \"risk\": \"可能引发的后果\",\n      \"suggestion\": \"修改/补强建议\",\n      \"references\": \"依据\",\n      \"priority\": 1\n    }\n  ],\n  \"top_actions\": [\"签约前应优先落实的 3-5 项关键行动\"],\n  \"suggestions\": [\"针对整体合同的综合优化建议\"],\n  \"disclaimer\": \"本报告由 AI 生成，仅供风险自查参考，不构成正式法律意见，重大交易请咨询专业律师。\"\n}\ndimensions 需覆盖全部五个维度；risk_items 至少保留各维度的高/中风险点并按 priority（1 最高）排序；不要省略字段。"
+}
