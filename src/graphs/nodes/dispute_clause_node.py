@@ -1,4 +1,4 @@
-"""违约与争议解决条款审查 Agent 节点。"""
+"""违约与争议解决条款审查 Agent 节点（RAG grounding）。"""
 
 import os
 import json
@@ -10,6 +10,7 @@ from coze_coding_dev_sdk import LLMClient
 from langchain_core.messages import SystemMessage, HumanMessage
 from graphs.state import DisputeClauseInput, DisputeClauseOutput
 from utils.llm_utils import get_text_content, parse_json_response
+from utils.trade_law_kb import search_trade_law
 
 
 def dispute_clause_node(
@@ -19,8 +20,8 @@ def dispute_clause_node(
 ) -> DisputeClauseOutput:
     """
     title: 违约与争议解决审查
-    desc: 审查违约责任、解除、不可抗力、适用法律与仲裁管辖等条款风险。
-    integrations: 大语言模型
+    desc: 先从外贸法律知识库检索相关法条，再基于检索条文（grounding）审查违约与争议解决风险。
+    integrations: 大语言模型、外贸法律知识库
     """
     ctx = runtime.context
 
@@ -31,12 +32,20 @@ def dispute_clause_node(
     sp = _cfg.get("sp", "")
     up = _cfg.get("up", "")
 
+    # RAG grounding：先从知识库检索与合同相关的权威法条
+    refs = search_trade_law(state.contract_text, ctx, top_k=6)
+    if refs:
+        law_refs = "\n".join("【来源：" + r["source"] + "】" + r["content"] for r in refs)
+    else:
+        law_refs = "（未从知识库检索到相关法条，请谨慎判断并在每条 references 中明确标注依据缺失）"
+
     up_tpl = Template(up)
     user_prompt = up_tpl.render(
         {
             "contract_text": state.contract_text,
             "target_country": state.target_country,
             "our_party": state.our_party,
+            "law_refs": law_refs,
         }
     )
 
