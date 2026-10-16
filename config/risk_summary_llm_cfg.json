@@ -4,7 +4,7 @@
         "temperature": 0.2,
         "topk": 0.7,
         "top_p": 0.6,
-        "max_completion_tokens": 2500,
+        "max_completion_tokens": 5000,
         "thinking": "disabled"
     },
     "tools": [],
