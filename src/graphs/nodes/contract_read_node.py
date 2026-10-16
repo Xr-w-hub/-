@@ -19,9 +19,6 @@ def contract_read_node(
     ctx = runtime.context
     _ = ctx
 
-    if state.contract_file is None:
-        raise ValueError("审查模式缺少必填输入：合同文件 contract_file")
-
     content = FileOps.extract_text(state.contract_file)
 
     return ContractReadOutput(contract_text=content)
